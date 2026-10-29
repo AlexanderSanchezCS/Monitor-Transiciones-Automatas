@@ -1,0 +1,67 @@
+{
+  "nombre": "P4_AFND",
+  "tipo": "AFND",
+  "descripcion": "Detecta cadenas que comienzan con R",
+  "alfabeto": [
+    "B",
+    "P",
+    "F",
+    "C",
+    "X",
+    "D",
+    "R",
+    "V"
+  ],
+  "estados": [
+    "d0",
+    "d1"
+  ],
+  "inicial": "d0",
+  "finales": [
+    "d1"
+  ],
+  "trans": {
+    "d0": {
+      "R": [
+        "d1"
+      ]
+    },
+    "d1": {
+      "B": [
+        "d1"
+      ],
+      "C": [
+        "d1"
+      ],
+      "D": [
+        "d1"
+      ],
+      "F": [
+        "d1"
+      ],
+      "P": [
+        "d1"
+      ],
+      "R": [
+        "d1"
+      ],
+      "V": [
+        "d1"
+      ],
+      "X": [
+        "d1"
+      ]
+    }
+  },
+  "epsilon": "",
+  "posiciones": {
+    "d0": {
+      "x": 180.0,
+      "y": 200.0
+    },
+    "d1": {
+      "x": 460.0,
+      "y": 200.0
+    }
+  }
+}

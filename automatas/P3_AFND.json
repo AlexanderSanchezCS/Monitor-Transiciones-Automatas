@@ -1,0 +1,67 @@
+{
+  "nombre": "P3_AFND",
+  "tipo": "AFND",
+  "descripcion": "Detecta cadenas que comienzan con D",
+  "alfabeto": [
+    "B",
+    "P",
+    "F",
+    "C",
+    "X",
+    "D",
+    "R",
+    "V"
+  ],
+  "estados": [
+    "c0",
+    "c1"
+  ],
+  "inicial": "c0",
+  "finales": [
+    "c1"
+  ],
+  "trans": {
+    "c0": {
+      "D": [
+        "c1"
+      ]
+    },
+    "c1": {
+      "B": [
+        "c1"
+      ],
+      "C": [
+        "c1"
+      ],
+      "D": [
+        "c1"
+      ],
+      "F": [
+        "c1"
+      ],
+      "P": [
+        "c1"
+      ],
+      "R": [
+        "c1"
+      ],
+      "V": [
+        "c1"
+      ],
+      "X": [
+        "c1"
+      ]
+    }
+  },
+  "epsilon": "",
+  "posiciones": {
+    "c0": {
+      "x": 180.0,
+      "y": 200.0
+    },
+    "c1": {
+      "x": 460.0,
+      "y": 200.0
+    }
+  }
+}

@@ -1,4 +1,5 @@
-const state = { sessions: [], patterns: [], summary: null, automaton: null };
+const state = { sessions: [], validationSessions: [], testSessions: [], activeDataset: "validation", patterns: [], summary: null, automaton: null };
+const graphSimulation = { sequence: "", index: 0, current: "M0", running: false };
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -19,16 +20,19 @@ function showSection(id) {
 
 function sessionTable(sessions) {
   if (!sessions.length) return '<div class="empty-state">No hay sesiones que coincidan con el filtro.</div>';
-  return `<table class="data-table"><thead><tr><th>IDENTIFICADOR</th><th>SECUENCIA</th><th>EVENTOS</th><th>RESULTADO</th><th>PATRÓN</th></tr></thead><tbody>${sessions.map((session) => `<tr><td class="mono">${session.id}</td><td class="mono">${session.sequence}</td><td>${session.events}</td><td><span class="status ${session.label}">${session.status}</span></td><td class="pattern-tag">${session.pattern}</td></tr>`).join("")}</tbody></table>`;
+  const isTest = state.activeDataset === "test";
+  return `<table class="data-table"><thead><tr><th>IDENTIFICADOR</th><th>SECUENCIA</th><th>EVENTOS</th><th>RESULTADO MONITOR</th><th>ETIQUETA ${isTest ? "CLAVE" : "CSV"}</th><th>PATRÓN</th>${isTest ? "<th>COINCIDE</th>" : ""}</tr></thead><tbody>${sessions.map((session) => `<tr><td class="mono">${session.id}</td><td class="mono">${session.sequence}</td><td>${session.events}</td><td><span class="status ${session.detected.length ? "anomala" : "normal"}">${session.status}</span></td><td><span class="status ${session.label}">${session.label === "anomala" ? "Anómala" : "Normal"}</span></td><td class="pattern-tag">${session.pattern}</td>${isTest ? `<td><span class="match-badge ${session.match ? "match" : "mismatch"}">${session.match ? "Sí" : "No"}</span></td>` : ""}</tr>`).join("")}</tbody></table>`;
 }
 
 function renderSessions() {
   $("#recent-sessions").innerHTML = sessionTable(state.sessions.slice(0, 5));
-  $("#all-sessions").innerHTML = sessionTable(state.sessions.filter((session) => {
+  const filtered = state.sessions.filter((session) => {
     const query = $("#session-search").value.toLowerCase();
     const status = $("#status-filter").value;
     return (status === "all" || session.label === status) && (!query || `${session.id} ${session.sequence}`.toLowerCase().includes(query));
-  }));
+  });
+  $("#session-count").textContent = `${filtered.length} de ${state.sessions.length} sesiones mostradas`;
+  $("#all-sessions").innerHTML = sessionTable(filtered);
 }
 
 function renderPatterns() {
@@ -40,12 +44,80 @@ function renderEvents(events) {
   $("#event-list").innerHTML = events.map((event) => `<div class="event-chip"><b>${event.symbol}</b><span>${event.name}</span></div>`).join("");
 }
 
+function updateGraphHighlight(activeFrom = "", activeTo = "", activeSymbol = "") {
+  $$("#automaton-graph .graph-node").forEach((node) => {
+    node.classList.toggle("current", node.dataset.state === graphSimulation.current);
+  });
+  $$("#automaton-graph .graph-edge").forEach((edge) => {
+    const symbols = edge.dataset.symbols.split(",");
+    edge.classList.toggle("active", edge.dataset.from === activeFrom && edge.dataset.to === activeTo && symbols.includes(activeSymbol));
+  });
+}
+
+function resetGraphSimulation() {
+  graphSimulation.sequence = "";
+  graphSimulation.index = 0;
+  graphSimulation.current = "M0";
+  graphSimulation.running = false;
+  $("#graph-next").disabled = true;
+  $("#graph-step-status").textContent = "LISTO · M0";
+  $("#graph-consumed").textContent = "Consumidos: —";
+  $("#graph-current-symbol").textContent = "Símbolo actual: —";
+  $("#graph-final-result").textContent = "Resultado: pendiente";
+  updateGraphHighlight();
+}
+
+function startGraphSimulation() {
+  const sequence = $("#graph-sequence").value.trim().toUpperCase();
+  const invalid = [...sequence].find((symbol) => !state.automaton.alphabet.includes(symbol));
+  if (!sequence || invalid) {
+    $("#graph-step-status").textContent = invalid ? `Símbolo inválido · ${invalid}` : "Ingresa una secuencia";
+    $("#graph-sequence").focus();
+    return;
+  }
+  graphSimulation.sequence = sequence;
+  graphSimulation.index = 0;
+  graphSimulation.current = "M0";
+  graphSimulation.running = true;
+  $("#graph-next").disabled = false;
+  $("#graph-step-status").textContent = "EN CURSO · M0";
+  $("#graph-consumed").textContent = "Consumidos: —";
+  $("#graph-current-symbol").textContent = `Siguiente símbolo: ${sequence[0]}`;
+  $("#graph-final-result").textContent = "Resultado: pendiente";
+  updateGraphHighlight();
+}
+
+function nextGraphStep() {
+  if (!graphSimulation.running || graphSimulation.index >= graphSimulation.sequence.length) return;
+  const symbol = graphSimulation.sequence[graphSimulation.index];
+  const from = graphSimulation.current;
+  const to = state.automaton.transitions[from][symbol];
+  graphSimulation.current = to;
+  graphSimulation.index += 1;
+  updateGraphHighlight(from, to, symbol);
+  $("#graph-step-status").textContent = `PASO ${graphSimulation.index}/${graphSimulation.sequence.length} · ${to}`;
+  $("#graph-consumed").textContent = `Recorrido: ${graphSimulation.sequence.slice(0, graphSimulation.index)}`;
+  $("#graph-current-symbol").textContent = graphSimulation.index < graphSimulation.sequence.length ? `Siguiente símbolo: ${graphSimulation.sequence[graphSimulation.index]}` : "Secuencia completa";
+  if (graphSimulation.index >= graphSimulation.sequence.length) {
+    graphSimulation.running = false;
+    $("#graph-next").disabled = true;
+    $("#graph-final-result").textContent = `Resultado: ${to === "M3" ? "ANÓMALA" : "NORMAL"} · estado final ${to}`;
+  }
+}
+
 function renderAutomaton() {
   const { states, transitions, alphabet, models } = state.automaton;
   $("#automaton-summary").innerHTML = `<div class="model-stat"><strong>${states.length}</strong><span>Estados mínimos</span></div><div class="model-stat"><strong>${alphabet.length}</strong><span>Símbolos del alfabeto</span></div><div class="model-stat"><strong>${alphabet.length * states.length}</strong><span>Transiciones</span></div><div class="model-stat"><strong>M3</strong><span>Estado de aceptación</span></div>`;
   $("#state-list").innerHTML = states.map((item) => `<div class="state-row"><span class="state-id ${item.id === "M3" ? "accepting" : ""}">${item.id}</span><div><strong>${item.name}</strong><small>${item.description}</small></div><span class="state-label">${item.id === "M0" ? "Inicial" : item.id === "M3" ? "Final" : "Intermedio"}</span></div>`).join("");
   $("#transition-table").innerHTML = `<table class="data-table transition-table"><thead><tr><th>ESTADO</th>${alphabet.map((symbol) => `<th>${symbol}</th>`).join("")}</tr></thead><tbody>${states.map((item) => `<tr><td class="mono">${item.id}</td>${alphabet.map((symbol) => `<td class="${transitions[item.id][symbol] === "M3" ? "accept-cell" : ""}">${transitions[item.id][symbol]}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  $$("#automaton-graph .graph-edge").forEach((edge) => {
+    const symbols = alphabet.filter((symbol) => transitions[edge.dataset.from][symbol] === edge.dataset.to);
+    const label = edge.querySelector("text");
+    if (label) label.textContent = symbols.join(", ");
+    edge.dataset.symbols = symbols.join(",");
+  });
   $("#metrics-list").innerHTML = `<div><span>Verdaderos positivos</span><strong>${state.summary.metrics.vp}</strong></div><div><span>Falsos positivos</span><strong>${state.summary.metrics.fp}</strong></div><div><span>Falsos negativos</span><strong>${state.summary.metrics.fn}</strong></div><div><span>Precisión</span><strong>${state.summary.metrics.precision}%</strong></div><div><span>Recall</span><strong>${state.summary.metrics.recall}%</strong></div>`;
+  resetGraphSimulation();
 }
 
 function renderSummary() {
@@ -83,7 +155,8 @@ async function analyze() {
 
 async function init() {
   try {
-    [state.summary, state.patterns, state.sessions, state.automaton] = await Promise.all([getJSON("/api/summary"), getJSON("/api/patterns"), getJSON("/api/sessions"), getJSON("/api/automaton")]);
+    [state.summary, state.patterns, state.validationSessions, state.testSessions, state.automaton] = await Promise.all([getJSON("/api/summary"), getJSON("/api/patterns"), getJSON("/api/sessions?dataset=validation"), getJSON("/api/sessions?dataset=test"), getJSON("/api/automaton")]);
+    state.sessions = state.validationSessions;
     renderSummary(); renderPatterns(); renderSessions(); renderEvents(await getJSON("/api/events")); renderAutomaton();
   } catch (error) {
     $("#updated").textContent = "sin conexión";
@@ -98,4 +171,14 @@ $("#sequence-input").addEventListener("keydown", (event) => { if (event.key === 
 $$(".quick-sequences button").forEach((button) => button.addEventListener("click", () => { $("#sequence-input").value = button.dataset.sequence; analyze(); }));
 $("#session-search").addEventListener("input", renderSessions);
 $("#status-filter").addEventListener("change", renderSessions);
+$("#dataset-filter").addEventListener("change", (event) => {
+  state.activeDataset = event.target.value;
+  state.sessions = state.activeDataset === "test" ? state.testSessions : state.validationSessions;
+  $("#session-search").value = "";
+  $("#status-filter").value = "all";
+  renderSessions();
+});
+$("#graph-start").addEventListener("click", startGraphSimulation);
+$("#graph-next").addEventListener("click", nextGraphStep);
+$("#graph-reset").addEventListener("click", resetGraphSimulation);
 init();

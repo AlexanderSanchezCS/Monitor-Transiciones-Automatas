@@ -1,0 +1,17 @@
+{
+  "name": "AFD mínimo - Monitor de transiciones",
+  "type": "DFA",
+  "alphabet": ["B", "P", "F", "C", "X", "D", "R", "V"],
+  "states": [
+    {"id": "M0", "initial": true, "accepting": false},
+    {"id": "M1", "initial": false, "accepting": false},
+    {"id": "M2", "initial": false, "accepting": false},
+    {"id": "M3", "initial": false, "accepting": true}
+  ],
+  "transitions": {
+    "M0": {"B": "M1", "P": "M2", "F": "M2", "C": "M1", "X": "M2", "D": "M3", "R": "M3", "V": "M2"},
+    "M1": {"B": "M1", "P": "M2", "F": "M2", "C": "M3", "X": "M2", "D": "M2", "R": "M2", "V": "M2"},
+    "M2": {"B": "M1", "P": "M2", "F": "M2", "C": "M1", "X": "M2", "D": "M2", "R": "M2", "V": "M2"},
+    "M3": {"B": "M3", "P": "M3", "F": "M3", "C": "M3", "X": "M3", "D": "M3", "R": "M3", "V": "M3"}
+  }
+}

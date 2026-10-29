@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<structure>
+  <type>fa</type>
+  <automaton>
+    <state id="0" name="M0"><x>100.0</x><y>180.0</y><initial/></state>
+    <state id="1" name="M1"><x>300.0</x><y>100.0</y></state>
+    <state id="2" name="M2"><x>300.0</x><y>260.0</y></state>
+    <state id="3" name="M3"><x>520.0</x><y>180.0</y><final/></state>
+    <transition><from>0</from><to>1</to><read>B</read></transition>
+    <transition><from>0</from><to>2</to><read>P</read></transition>
+    <transition><from>0</from><to>2</to><read>F</read></transition>
+    <transition><from>0</from><to>1</to><read>C</read></transition>
+    <transition><from>0</from><to>2</to><read>X</read></transition>
+    <transition><from>0</from><to>3</to><read>D</read></transition>
+    <transition><from>0</from><to>3</to><read>R</read></transition>
+    <transition><from>0</from><to>2</to><read>V</read></transition>
+    <transition><from>1</from><to>1</to><read>B</read></transition>
+    <transition><from>1</from><to>2</to><read>P</read></transition>
+    <transition><from>1</from><to>2</to><read>F</read></transition>
+    <transition><from>1</from><to>3</to><read>C</read></transition>
+    <transition><from>1</from><to>2</to><read>X</read></transition>
+    <transition><from>1</from><to>2</to><read>D</read></transition>
+    <transition><from>1</from><to>2</to><read>R</read></transition>
+    <transition><from>1</from><to>2</to><read>V</read></transition>
+    <transition><from>2</from><to>1</to><read>B</read></transition>
+    <transition><from>2</from><to>2</to><read>P</read></transition>
+    <transition><from>2</from><to>2</to><read>F</read></transition>
+    <transition><from>2</from><to>1</to><read>C</read></transition>
+    <transition><from>2</from><to>2</to><read>X</read></transition>
+    <transition><from>2</from><to>2</to><read>D</read></transition>
+    <transition><from>2</from><to>2</to><read>R</read></transition>
+    <transition><from>2</from><to>2</to><read>V</read></transition>
+    <transition><from>3</from><to>3</to><read>B</read></transition>
+    <transition><from>3</from><to>3</to><read>P</read></transition>
+    <transition><from>3</from><to>3</to><read>F</read></transition>
+    <transition><from>3</from><to>3</to><read>C</read></transition>
+    <transition><from>3</from><to>3</to><read>X</read></transition>
+    <transition><from>3</from><to>3</to><read>D</read></transition>
+    <transition><from>3</from><to>3</to><read>R</read></transition>
+    <transition><from>3</from><to>3</to><read>V</read></transition>
+  </automaton>
+</structure>

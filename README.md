@@ -18,12 +18,29 @@ Después, abre [http://localhost:8000](http://localhost:8000) en el navegador.
 
 ## Estructura
 
-- `backend/`: API HTTP y simulación de los cuatro patrones formales.
+- `backend/`: API HTTP y entrega de archivos estáticos; no contiene la lógica académica.
 - `frontend/`: consola web del monitor.
 - `datos/`: generador y conjuntos CSV del experimento.
-- `automatas/`: representaciones `.jff` y `.json`.
-- `monitor/`: implementación académica del procesamiento y métricas.
+- `automatas/`: representaciones formales `.jff` y `.json` para abrir en JFLAP o reutilizar en otras herramientas.
+- `monitor/automata.py`: alfabeto, estados, transiciones, simulación, cierre-ε, construcción por subconjuntos y minimización.
+- `monitor/monitor.py`: lectura de CSV, reconstrucción de sesiones, detección de patrones y métricas.
 - `informe/`: informe técnico y presentación.
+
+## Flujo de datos y responsabilidades
+
+```text
+datos/*.csv
+    ↓
+monitor/monitor.py
+    ↓ usa
+monitor/automata.py
+    ↓
+backend/server.py → API JSON → frontend/app.js
+```
+
+La fuente de verdad del AFD mínimo está duplicada únicamente como formato de
+intercambio en `automatas/afd_minimo.json` y `automatas/afd_minimo.jff`; la
+aplicación carga la definición equivalente desde `monitor/automata.py`.
 
 ## Generación de datos sintéticos
 

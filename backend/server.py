@@ -72,11 +72,11 @@ class Handler(BaseHTTPRequestHandler):
                 "alphabet": list(ALPHABET),
                 "initial": "M0",
                 "accepting": sorted(ACCEPTING_STATES),
-                "models": {"afnd": 11, "afd": 37, "minimal": 4},
+                "models": {"afnd": None, "afd": None, "minimal": len(AUTOMATON_STATES)},
             })
         elif parsed.path.startswith("/api/analyze/"):
             sequence = parsed.path.removeprefix("/api/analyze/").upper()
-            if not sequence or not re.fullmatch(f"[{''.join(ALPHABET)}]+", sequence):
+            if not re.fullmatch(f"[{''.join(ALPHABET)}]*", sequence):
                 self._send({"error": "La secuencia contiene símbolos fuera del alfabeto."}, 400)
             else:
                 self._send(analyze_sequence(sequence))
@@ -94,7 +94,7 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError, json.JSONDecodeError):
             self._send({"error": "Solicitud JSON inválida."}, 400)
             return
-        if not sequence or not re.fullmatch(f"[{''.join(ALPHABET)}]+", sequence):
+        if not re.fullmatch(f"[{''.join(ALPHABET)}]*", sequence):
             self._send({"error": "Ingresa una cadena usando únicamente B, P, F, C, X, D, R o V."}, 400)
             return
         self._send(analyze_sequence(sequence))

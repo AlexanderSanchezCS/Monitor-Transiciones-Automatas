@@ -117,6 +117,9 @@ function renderAutomaton() {
     edge.dataset.symbols = symbols.join(",");
   });
   $("#metrics-list").innerHTML = `<div><span>Verdaderos positivos</span><strong>${state.summary.metrics.vp}</strong></div><div><span>Falsos positivos</span><strong>${state.summary.metrics.fp}</strong></div><div><span>Falsos negativos</span><strong>${state.summary.metrics.fn}</strong></div><div><span>Precisión</span><strong>${state.summary.metrics.precision}%</strong></div><div><span>Recall</span><strong>${state.summary.metrics.recall}%</strong></div>`;
+  $("#afnd-count").textContent = models.afnd == null ? "No verificado" : `${models.afnd} estados`;
+  $("#afd-count").textContent = models.afd == null ? "No verificado" : `${models.afd} estados`;
+  $("#minimal-count").textContent = `${models.minimal ?? states.length} estados`;
   resetGraphSimulation();
 }
 

@@ -1,0 +1,1 @@
+{"name":"AFD P3","type":"DFA","alphabet":["B","P","F","C","X","D","R","V"],"states":[{"id":"q0","initial":true},{"id":"q1","accepting":true},{"id":"qdead"}],"transitions":[{"from":"q0","read":"D","to":["q1"]},{"from":"q0","read":"BPF CXR V","to":["qdead"]},{"from":"q1","read":"BPF CXDRV","to":["q1"]},{"from":"qdead","read":"BPF CXDRV","to":["qdead"]}]}

@@ -29,8 +29,6 @@ TRANSITIONS = {
 def validate_sequence(sequence: str) -> str:
     normalized = sequence.strip().upper()
     invalid = sorted(set(normalized) - set(ALPHABET))
-    if not normalized:
-        raise ValueError("La secuencia no puede estar vacía.")
     if invalid:
         raise ValueError(f"Símbolos inválidos: {', '.join(invalid)}.")
     return normalized
@@ -127,7 +125,7 @@ def minimize_dfa(
         partitions = refined
     names = {state: f"M{index}" for index, part in enumerate(partitions) for state in part}
     return {
-        "states": list(names.values()),
+        "states": sorted(set(names.values())),
         "initial": names[initial],
         "accepting": sorted({names[state] for state in accepting}),
         "transitions": {
@@ -137,4 +135,3 @@ def minimize_dfa(
             for part in partitions
         },
     }
-

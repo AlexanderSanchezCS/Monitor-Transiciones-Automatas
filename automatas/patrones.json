@@ -1,0 +1,9 @@
+{
+  "description": "Lenguajes anómalos verificados por el monitor",
+  "patterns": {
+    "P1": {"name": "Contiene BC", "regular_expression": "Σ*BCΣ*"},
+    "P2": {"name": "Contiene CC", "regular_expression": "Σ*CCΣ*"},
+    "P3": {"name": "Comienza con D", "regular_expression": "DΣ*"},
+    "P4": {"name": "Comienza con R", "regular_expression": "RΣ*"}
+  }
+}

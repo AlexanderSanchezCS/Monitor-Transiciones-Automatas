@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import csv
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from .automata import ALPHABET, TRANSITIONS, simulate
+from .automata import ALPHABET, accepts, simulate
 
 
 PATTERNS = [
@@ -59,8 +60,9 @@ def load_dataset_sessions(root: Path, dataset: str = "validation") -> list[dict[
     for session in grouped.values():
         detected = detect_patterns(session["sequence"])
         session["detected"] = detected
-        session["status"] = "Anómala" if detected else "Normal"
-        session["match"] = session["label"] == ("anomala" if detected else "normal") if session["label"] != "sin_etiqueta" else None
+        is_anomalous = accepts(session["sequence"])
+        session["status"] = "Anómala" if is_anomalous else "Normal"
+        session["match"] = session["label"] == ("anomala" if is_anomalous else "normal") if session["label"] != "sin_etiqueta" else None
     return list(grouped.values())
 
 
@@ -68,12 +70,13 @@ def analyze_sequence(sequence: str) -> dict[str, Any]:
     normalized = sequence.strip().upper()
     detected = detect_patterns(normalized)
     trace = simulate(normalized)
+    is_anomalous = accepts(normalized)
     return {
-        "sequence": normalized, "valid": True, "status": "Anómala" if detected else "Normal",
+        "sequence": normalized, "valid": True, "status": "Anómala" if is_anomalous else "Normal",
         "patterns": detected, "events": [{"symbol": symbol, "name": EVENTS[symbol]} for symbol in normalized],
         "trace": trace, "pattern_evidence": pattern_evidence(normalized, detected),
         "final_state": trace[-1]["to"],
-        "explanation": "Se detectaron patrones anómalos; el AFD mínimo alcanza M3." if detected else "No se activó ninguna condición anómala.",
+        "explanation": "El AFD mínimo alcanza M3; los verificadores identifican los patrones." if is_anomalous else "El AFD termina fuera de M3; la cadena se clasifica como normal.",
     }
 
 
@@ -90,12 +93,54 @@ def pattern_evidence(sequence: str, detected: list[dict[str, str]]) -> list[dict
 def generated_summary(root: Path) -> dict[str, Any]:
     validation = load_dataset_sessions(root, "validation")
     test = load_dataset_sessions(root, "test")
-    validation_anomalies = sum(session["label"] == "anomala" for session in validation)
-    test_anomalies = sum(session["label"] == "anomala" for session in test)
+    validation_metrics = calculate_metrics(validation)
+    test_metrics = calculate_metrics(test)
+    combined = calculate_metrics(validation + test)
     return {
-        "validation": {"sessions": len(validation), "anomalies": validation_anomalies, "normal": len(validation) - validation_anomalies, "events": sum(s["events"] for s in validation)},
-        "test": {"sessions": len(test), "anomalies": test_anomalies, "normal": len(test) - test_anomalies, "events": sum(s["events"] for s in test)},
-        "accuracy": 100, "metrics": {"vp": validation_anomalies + test_anomalies, "fp": 0, "fn": 0, "precision": 100, "recall": 100},
-        "models": {"afnd": 11, "afd": 37, "minimal": 4, "transitions": len(ALPHABET) * 4},
-        "seeds": {"validation": 2026, "test": 2027}, "updated": "28 oct 2026, 11:42",
+        "validation": {"sessions": len(validation), "anomalies": validation_metrics["expected_anomalies"], "normal": validation_metrics["tn"] + validation_metrics["fp"], "events": sum(s["events"] for s in validation), "metrics": validation_metrics},
+        "test": {"sessions": len(test), "anomalies": test_metrics["expected_anomalies"], "normal": test_metrics["tn"] + test_metrics["fp"], "events": sum(s["events"] for s in test), "metrics": test_metrics},
+        "accuracy": combined["accuracy"], "metrics": combined,
+        "models": {"afnd": None, "afd": None, "minimal": 4, "transitions": len(ALPHABET) * 4},
+        "seeds": {"validation": 2026, "test": 2027},
+        "updated": datetime.now().astimezone().strftime("%d %b %Y, %H:%M"),
     }
+
+
+def calculate_metrics(sessions: list[dict[str, Any]]) -> dict[str, float | int]:
+    """Calcula métricas comparando la etiqueta esperada con la decisión del AFD."""
+    labeled = [session for session in sessions if session["label"] != "sin_etiqueta"]
+    true_positive = sum(session["label"] == "anomala" and session["match"] for session in labeled)
+    false_positive = sum(session["label"] == "normal" and session["status"] == "Anómala" for session in labeled)
+    false_negative = sum(session["label"] == "anomala" and session["status"] == "Normal" for session in labeled)
+    true_negative = sum(session["label"] == "normal" and session["status"] == "Normal" for session in labeled)
+    total = len(labeled)
+    precision = true_positive / (true_positive + false_positive) if true_positive + false_positive else 0
+    recall = true_positive / (true_positive + false_negative) if true_positive + false_negative else 0
+    return {
+        "vp": true_positive, "fp": false_positive, "fn": false_negative,
+        "tn": true_negative, "expected_anomalies": true_positive + false_negative,
+        "accuracy": round((true_positive + true_negative) / total * 100, 2) if total else 0,
+        "precision": round(precision * 100, 2), "recall": round(recall * 100, 2),
+    }
+
+
+def console_report(root: Path, dataset: str = "test") -> str:
+    sessions = load_dataset_sessions(root, dataset)
+    metrics = calculate_metrics(sessions)
+    return (
+        f"Conjunto: {dataset}\n"
+        f"Sesiones: {len(sessions)}\n"
+        f"VP={metrics['vp']} FP={metrics['fp']} FN={metrics['fn']} TN={metrics['tn']}\n"
+        f"Precisión={metrics['precision']}% Recall={metrics['recall']}% Exactitud={metrics['accuracy']}%\n"
+        f"Estados mínimos={4} Transiciones={len(ALPHABET) * 4}\n"
+    )
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Ejecuta el informe de métricas del monitor.")
+    parser.add_argument("dataset", choices=("validation", "test"), nargs="?", default="test")
+    parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1])
+    args = parser.parse_args()
+    print(console_report(args.root, args.dataset), end="")
